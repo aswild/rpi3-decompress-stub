@@ -42,6 +42,8 @@ struct bcm283x_mu_regs {
 #define readl(c)    ({ uint32_t __v = __arch_getl(c); __iormb(); __v; })
 #define writel(v,c) ({ uint32_t __v = v; __iowmb(); __arch_putl(__v,c); __v; })
 
+extern uint64_t _app_start;
+
 static void bcm283x_mu_serial_putc(const char data)
 {
     struct bcm283x_mu_regs *regs = (struct bcm283x_mu_regs *)BCM2835_MU_BASE;
@@ -105,7 +107,7 @@ uint64_t read_spsel(void)
     return v;
 }
 
-void app(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
+void app(uint64_t r0, uint64_t r1, uint64_t r2, uint64_t r3)
 {
     static int this_cpuid = -1;
     uint64_t v;
@@ -153,9 +155,21 @@ void app(uint32_t r0, uint32_t r1, uint32_t r2, uint32_t r3)
     dbg_puthex4(v);
     dbg_puts("\r\n");
 
+    dbg_puts("dtb_ptr32:");
+    dbg_puthex32(*(volatile uint32_t *)0xf8);
+    dbg_puts("\r\n");
+
+    dbg_puts("kernel_entry32:");
+    dbg_puthex32(*(volatile uint32_t *)0xfc);
+    dbg_puts("\r\n");
+
+    dbg_puts("_app_start:");
+    dbg_puthex64((uint64_t)&_app_start);
+    dbg_puts("\r\n");
+
     if (this_cpuid < 3) {
-        unsigned long long *spin_table = (void *)0xd8;
-        spin_table[this_cpuid + 1] = 0x80000;
+        void **spin_table = (void*)0xd8;
+        spin_table[this_cpuid + 1] = &_app_start;
         __asm__ __volatile__("sev");
     }
 

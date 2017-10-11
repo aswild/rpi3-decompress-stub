@@ -54,6 +54,7 @@
 #define SPSR_EL3_VAL \
     (SPSR_EL3_D | SPSR_EL3_A | SPSR_EL3_I | SPSR_EL3_F | SPSR_EL3_MODE_EL2H)
 
+.section .init
 .globl _start
 _start:
     /*
@@ -115,14 +116,23 @@ secondary_spin:
     b boot_kernel
 
 primary_cpu:
-    ldr w4, kernel_entry32
+    #ldr w4, =_app_start
     ldr w0, dtb_ptr32
 
 boot_kernel:
-    mov x1, #0
+    ldr w1, =0xdeadbeef
     mov x2, #0
     mov x3, #0
-    br x4
+    #br x4
+    #b _app_start
+
+.globl _app_start
+_app_start:
+    ldr x5, =0x00100000
+    mov sp, x5
+    bl app
+hang:
+    b hang
 
 .ltorg
 
@@ -155,12 +165,14 @@ stub_version:
 .org 0xf8
 .globl dtb_ptr32
 dtb_ptr32:
-    .word 0x0
+    .word 0xffffffff
 .org 0xfc
 .globl kernel_entry32
 kernel_entry32:
-    .word 0x0
+    .word 0xffffffff
 
 .org 0x100
-.globl dtb_space
-dtb_space:
+.globl _gap
+_gap:
+    # CODE MUST END BEFORE HERE
+    # The firmware will put ATAGs or other stuff at 0x100
