@@ -7,7 +7,7 @@ OBJDUMP = $(CROSS_COMPILE)objdump
 
 CC_FLAGS = -std=gnu99 -Wall -Ilib $(CFLAGS)
 AS_FLAGS = -Wall $(ASFLAGS)
-LD_FLAGS = $(LDFLAGS)
+LD_FLAGS = --as-needed $(LDFLAGS)
 
 
 BIN = armstub8.bin
@@ -15,7 +15,8 @@ ELF = armstub8.elf
 DIS = armstub8.dis
 
 OBJ = start.o \
-	  app.o
+	  app.o \
+	  lib/decompress_unlzma.o
 
 LDS = linker-script.lds
 
@@ -42,11 +43,10 @@ $(DIS) : $(ELF)
 	$(OBJDUMP) -D $< > $@
 
 clean:
-	rm -f *.o *.elf *.bin *.dis
+	rm -f *.o lib/*.o *.elf *.bin *.dis
 
 install: $(BIN)
 	@sudo sh -xc 'mount $(DEV) $(MOUNTPOINT) && \
-		          rm -f $(MOUNTPOINT)/kernel*.img && \
 		          cp -f $(BIN) $(MOUNTPOINT)/armstub8.bin && \
 				  umount $(DEV)'
 
