@@ -128,7 +128,7 @@ boot_kernel:
 
 .globl _app_start
 _app_start:
-    ldr x5, =0x00100000
+    ldr x5, =0x00200000
     mov sp, x5
     bl app
 hang:
@@ -165,11 +165,11 @@ stub_version:
 .org 0xf8
 .globl dtb_ptr32
 dtb_ptr32:
-    .word 0xffffffff
+    .word 0x0
 .org 0xfc
 .globl kernel_entry32
 kernel_entry32:
-    .word 0xffffffff
+    .word 0x00380000
 
 .org 0x100
 .globl _gap

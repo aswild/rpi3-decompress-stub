@@ -9,6 +9,12 @@
  */
 
 #include <stdint.h>
+#include <limits.h>
+#include "unlzma.h"
+
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
 
 #define BIT(x) (1 << (x))
 
@@ -56,7 +62,7 @@ static void bcm283x_mu_serial_putc(const char data)
     writel(data, &regs->io);
 }
 
-void dbg_puts(const char *s)
+void dbg_puts(char *s)
 {
     while (*s)
         bcm283x_mu_serial_putc(*s++);
@@ -105,6 +111,29 @@ uint64_t read_spsel(void)
     uint64_t v;
     __asm__ __volatile__("mrs %0, spsel" : "=r" (v) : : );
     return v;
+}
+
+void unlzma_and_print()
+{
+    uint32_t kern_addr_32 = *(volatile uint32_t *)0xfc;
+    unsigned char *kern_addr = (unsigned char *)(0L | kern_addr_32);
+    unsigned char *outbuf = (unsigned char*)0x00280000;
+    long sz;
+
+    dbg_puts("decompress from ");
+    dbg_puthex64((uint64_t)kern_addr);
+    dbg_puts(" to ");
+    dbg_puthex64((uint64_t)outbuf);
+    dbg_puts("\r\n");
+
+    unlzma(kern_addr, LONG_MAX, NULL, NULL, outbuf, &sz, dbg_puts);
+
+    dbg_puts("Decompressed ");
+    dbg_puthex64(sz);
+    dbg_puts(" bytes:\r\n");
+
+    outbuf[sz] = '\0';
+    dbg_puts((char*)outbuf);
 }
 
 void app(uint64_t r0, uint64_t r1, uint64_t r2, uint64_t r3)
@@ -167,11 +196,16 @@ void app(uint64_t r0, uint64_t r1, uint64_t r2, uint64_t r3)
     dbg_puthex64((uint64_t)&_app_start);
     dbg_puts("\r\n");
 
+    dbg_puts("Decompressing 'kernel' data...\r\n");
+    unlzma_and_print();
+
+#if 0
     if (this_cpuid < 3) {
         void **spin_table = (void*)0xd8;
         spin_table[this_cpuid + 1] = &_app_start;
         __asm__ __volatile__("sev");
     }
+#endif
 
     while (1) {
     }
