@@ -65,7 +65,11 @@ static void bcm283x_mu_serial_putc(const char data)
 void dbg_puts(char *s)
 {
     while (*s)
+    {
+        if (*s == '\n')
+            bcm283x_mu_serial_putc('\r');
         bcm283x_mu_serial_putc(*s++);
+    }
 }
 
 void dbg_puthex4(int val)
@@ -124,13 +128,13 @@ void unlzma_and_print()
     dbg_puthex64((uint64_t)kern_addr);
     dbg_puts(" to ");
     dbg_puthex64((uint64_t)outbuf);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     unlzma(kern_addr, LONG_MAX, NULL, NULL, outbuf, &sz, dbg_puts);
 
     dbg_puts("Decompressed ");
     dbg_puthex64(sz);
-    dbg_puts(" bytes:\r\n");
+    dbg_puts(" bytes:\n");
 
     outbuf[sz] = '\0';
     dbg_puts((char*)outbuf);
@@ -145,58 +149,58 @@ void app(uint64_t r0, uint64_t r1, uint64_t r2, uint64_t r3)
 
     /* LF after line noise */
     if (!this_cpuid)
-        dbg_puts("\r\n");
+        dbg_puts("\n");
 
-    dbg_puts("Hello, world!\r\n");
+    dbg_puts("Hello, world!\n");
 
     dbg_puts("this_cpuid:");
     dbg_puthex4(this_cpuid);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("MPIDR:");
     v = read_mpidr();
     dbg_puthex64(v);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("r0:");
     dbg_puthex64(r0);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("r1:");
     dbg_puthex64(r1);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("r2:");
     dbg_puthex64(r2);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("r3:");
     dbg_puthex64(r3);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("CurrentEL:");
     v = read_currentel();
     dbg_puthex4(v);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("SPSel:");
     v = read_spsel();
     dbg_puthex4(v);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("dtb_ptr32:");
     dbg_puthex32(*(volatile uint32_t *)0xf8);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("kernel_entry32:");
     dbg_puthex32(*(volatile uint32_t *)0xfc);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
     dbg_puts("_app_start:");
     dbg_puthex64((uint64_t)&_app_start);
-    dbg_puts("\r\n");
+    dbg_puts("\n");
 
-    dbg_puts("Decompressing 'kernel' data...\r\n");
+    dbg_puts("Decompressing 'kernel' data...\n");
     unlzma_and_print();
 
 #if 0
