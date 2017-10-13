@@ -50,6 +50,7 @@ static uint16_t *static_p_buf[16384 / sizeof(uint16_t)];
 
 #define	MIN(a, b) (((a) < (b)) ? (a) : (b))
 
+#if 0
 static long long INIT read_int(unsigned char *ptr, int size)
 {
 	int i;
@@ -62,6 +63,10 @@ static long long INIT read_int(unsigned char *ptr, int size)
 
 #define ENDIAN_CONVERT(x) \
   x = (typeof(x))read_int((unsigned char *)&x, sizeof(x))
+
+#else
+#define ENDIAN_CONVERT(x) ((void)0)
+#endif
 
 
 /* Small range coder implementation for lzma.
@@ -235,7 +240,8 @@ struct lzma_header {
 	uint8_t pos;
 	uint32_t dict_size;
 	uint64_t dst_size;
-} __attribute__ ((packed)) ;
+};
+//} __attribute__ ((packed)) ;
 
 
 #define LZMA_BASE_SIZE 1846
@@ -592,11 +598,36 @@ int INIT unlzma(unsigned char *buf, long in_len,
 
 	rc_init(&rc, fill, (char*)inbuf, in_len);
 
+#if 0
 	for (i = 0; i < sizeof(header); i++) {
 		if (rc.ptr >= rc.buffer_end)
 			rc_read(&rc);
 		((unsigned char *)&header)[i] = *rc.ptr++;
 	}
+#else
+	// we can't use unaligned access for some reason, so the header struct can't
+	// be packed, therefore handle it one byte at a time
+	{
+		uint8_t hb[1+4+8];
+		for (i = 0; i < sizeof(hb); i++)
+			hb[i] = *rc.ptr++;
+
+		header.pos = hb[0];
+		header.dict_size = (hb[4] << 24) |
+						   (hb[3] << 16) |
+						   (hb[2] <<  8) |
+						   (hb[1]);
+
+		header.dst_size =  ((uint64_t)hb[12] << 56) |
+						   ((uint64_t)hb[11] << 48) |
+						   ((uint64_t)hb[10] << 40) |
+						   ((uint64_t)hb[9]  << 32) |
+						   ((uint64_t)hb[8]  << 24) |
+						   ((uint64_t)hb[8]  << 16) |
+						   ((uint64_t)hb[6]  <<  8) |
+						   ((uint64_t)hb[5]);
+	}
+#endif
 
 	if (header.pos >= (9 * 5 * 5)) {
 		error("bad header");
@@ -643,7 +674,6 @@ int INIT unlzma(unsigned char *buf, long in_len,
 #else
     p = (uint16_t*)static_p_buf;
 #endif
-	num_probs = LZMA_LITERAL + (LZMA_LIT_SIZE << (lc + lp));
 	for (i = 0; i < num_probs; i++)
 		p[i] = (1 << RC_MODEL_TOTAL_BITS) >> 1;
 
@@ -671,8 +701,14 @@ int INIT unlzma(unsigned char *buf, long in_len,
 			goto exit_3;
 	}
 
+#if 0
 	if (posp)
 		*posp = rc.ptr-rc.buffer;
+#else
+	if (posp)
+		*posp = get_pos(&wr);
+#endif
+
 	if (!wr.flush || wr.flush(wr.buffer, wr.buffer_pos) == wr.buffer_pos)
 		ret = 0;
 exit_3:

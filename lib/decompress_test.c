@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
         sz += rd;
 
     long dec_size;
-    int ret = unlzma(inbuf, sz, NULL, NULL, outbuf, &dec_size, error);
+    int ret = unlzma(inbuf, 0x7fffffffffffffff, NULL, NULL, outbuf, &dec_size, error);
 
     printf("Read %zu compressed bytes (ret=%d):\n%s\n", dec_size, ret, outbuf);
     return 0;
