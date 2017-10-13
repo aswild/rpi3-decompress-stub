@@ -5,6 +5,11 @@ LD = $(CROSS_COMPILE)ld
 OBJCOPY = $(CROSS_COMPILE)objcopy
 OBJDUMP = $(CROSS_COMPILE)objdump
 
+CC_FLAGS = -std=gnu99 -Wall -Ilib $(CFLAGS)
+AS_FLAGS = -Wall $(ASFLAGS)
+LD_FLAGS = $(LDFLAGS)
+
+
 BIN = armstub8.bin
 ELF = armstub8.elf
 DIS = armstub8.dis
@@ -21,14 +26,14 @@ all: $(BIN) $(DIS)
 .PHONY: all
 
 %.o : %.S
-	$(CC) -Wall -c -o $@ $<
+	$(CC) $(AS_FLAGS) -c -o $@ $<
 
 %.o : %.c
-	$(CC) -std=gnu99 -Wall -c -o $@ $<
+	$(CC) $(CC_FLAGS) -c -o $@ $<
 
 $(ELF) : $(OBJ) $(LDS)
 	@#$(CC) -static -nostartfiles -T $(LDS) -o $@ -Wl,--as-needed $(OBJ)
-	$(LD) -T $(LDS) -o $@ $(OBJ)
+	$(LD) $(LD_FLAGS) -T $(LDS) -o $@ $(OBJ)
 
 $(BIN) : $(ELF)
 	$(OBJCOPY) $< -O binary $@
